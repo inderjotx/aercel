@@ -18,6 +18,24 @@ const createAppSchema = z.object({
     buildCommand: z.string().optional(),
 });
 
+const updateAppSchema = z.object({
+    id: z.string(),
+    name: z.string().min(1),
+    gitUrl: z.string().min(1),
+    type: z.enum(appType.enumValues),
+    gitBranch: z.string().min(1),
+    gitToken: z.string().optional(),
+    gitFolder: z.string().optional(),
+    environmentVariables: z.record(z.string(), z.string()),
+    startCommand: z.string().min(1),
+    installCommand: z.string().optional(),
+    buildCommand: z.string().optional(),
+});
+
+const deleteAppSchema = z.object({
+    id: z.string(),
+});
+
 export const myAppsSchema = z.object({
     page: z.number().min(1).default(1),
     limit: z.number().min(1).default(10),
@@ -55,6 +73,35 @@ export const applicationRouter = createTRPCRouter({
                 buildCommand: input.buildCommand,
                 userId: ctx.user.id,
             });
+        }),
+
+    update: protectedProcedure
+        .input(updateAppSchema)
+        .mutation(async ({ ctx, input }) => {
+            await ctx.db
+                .update(app)
+                .set({
+                    name: input.name,
+                    gitUrl: input.gitUrl,
+                    type: input.type,
+                    gitBranch: input.gitBranch,
+                    gitToken: input.gitToken,
+                    gitFolder: input.gitFolder,
+                    environmentVariables: input.environmentVariables,
+                    startCommand: input.startCommand,
+                    installCommand: input.installCommand,
+                    buildCommand: input.buildCommand,
+                    updatedAt: new Date(),
+                })
+                .where(eq(app.id, input.id));
+        }),
+
+    delete: protectedProcedure
+        .input(deleteAppSchema)
+        .mutation(async ({ ctx, input }) => {
+            await ctx.db
+                .delete(app)
+                .where(eq(app.id, input.id));
         }),
 
 });

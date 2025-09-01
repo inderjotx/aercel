@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { api } from "@/trpc/react";
 import {
   Card,
@@ -10,10 +11,25 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, GitBranch, Calendar } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ExternalLink, GitBranch, Calendar, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { CreateAppDialog } from "./create-app-dialog";
 
 export function DashboardContent() {
+  const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
+  const utils = api.useUtils();
+
   const {
     data: apps,
     isLoading,
@@ -22,6 +38,18 @@ export function DashboardContent() {
     page: 1,
     limit: 50,
   });
+
+  const deleteApp = api.app.delete.useMutation({
+    onSuccess: () => {
+      void utils.app.myApps.invalidate();
+      setDeletingAppId(null);
+    },
+  });
+
+  const handleDeleteApp = (appId: string) => {
+    setDeletingAppId(appId);
+    deleteApp.mutate({ id: appId });
+  };
 
   if (isLoading) {
     return (
@@ -106,6 +134,63 @@ export function DashboardContent() {
                   View Details
                 </Link>
               </Button>
+
+              <CreateAppDialog
+                app={{
+                  id: app.id,
+                  name: app.name,
+                  gitUrl: app.gitUrl,
+                  type: app.type,
+                  gitBranch: app.gitBranch ?? "main",
+                  gitToken: app.gitToken ?? undefined,
+                  gitFolder: app.gitFolder ?? undefined,
+                  environmentVariables:
+                    (app.environmentVariables as Record<string, string>) ?? {},
+                  startCommand: app.startCommand ?? "",
+                  installCommand: app.installCommand ?? undefined,
+                  buildCommand: app.buildCommand ?? undefined,
+                }}
+              >
+                <Button variant="outline" size="sm">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </CreateAppDialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      the application &quot;{app.name}&quot; and all its
+                      associated data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDeleteApp(app.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={deletingAppId === app.id}
+                    >
+                      {deletingAppId === app.id ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </Card>

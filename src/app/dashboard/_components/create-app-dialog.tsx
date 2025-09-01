@@ -27,9 +27,23 @@ import { Loader2 } from "lucide-react";
 
 interface CreateAppDialogProps {
   children: React.ReactNode;
+  app?: {
+    id: string;
+    name: string;
+    gitUrl: string;
+    type: "nextjs-app" | "discord-bot" | "server";
+    gitBranch: string;
+    gitToken?: string;
+    gitFolder?: string;
+    environmentVariables?: Record<string, string>;
+    startCommand: string;
+    installCommand?: string;
+    buildCommand?: string;
+  };
 }
 
-export function CreateAppDialog({ children }: CreateAppDialogProps) {
+export function CreateAppDialog({ children, app }: CreateAppDialogProps) {
+  const isEditing = !!app;
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const utils = api.useUtils();
@@ -42,17 +56,29 @@ export function CreateAppDialog({ children }: CreateAppDialogProps) {
     },
   });
 
+  const updateApp = api.app.update.useMutation({
+    onSuccess: () => {
+      setOpen(false);
+      void utils.app.myApps.invalidate();
+      router.push("/dashboard");
+    },
+  });
+
   const [formData, setFormData] = useState({
-    name: "",
-    gitUrl: "",
-    type: "nextjs-app" as const,
-    gitBranch: "main",
-    gitToken: "",
-    gitFolder: ".",
-    environmentVariables: "",
-    startCommand: "",
-    installCommand: "",
-    buildCommand: "",
+    name: app?.name ?? "",
+    gitUrl: app?.gitUrl ?? "",
+    type: app?.type ?? ("nextjs-app" as const),
+    gitBranch: app?.gitBranch ?? "main",
+    gitToken: app?.gitToken ?? "",
+    gitFolder: app?.gitFolder ?? ".",
+    environmentVariables: app?.environmentVariables
+      ? Object.entries(app.environmentVariables)
+          .map(([key, value]) => `${key}=${value}`)
+          .join("\n")
+      : "",
+    startCommand: app?.startCommand ?? "",
+    installCommand: app?.installCommand ?? "",
+    buildCommand: app?.buildCommand ?? "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,7 +95,7 @@ export function CreateAppDialog({ children }: CreateAppDialogProps) {
       });
     }
 
-    createApp.mutate({
+    const appData = {
       name: formData.name,
       gitUrl: formData.gitUrl,
       type: formData.type,
@@ -80,7 +106,16 @@ export function CreateAppDialog({ children }: CreateAppDialogProps) {
       startCommand: formData.startCommand,
       installCommand: formData.installCommand || undefined,
       buildCommand: formData.buildCommand || undefined,
-    });
+    };
+
+    if (isEditing && app) {
+      updateApp.mutate({
+        id: app.id,
+        ...appData,
+      });
+    } else {
+      createApp.mutate(appData);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -92,9 +127,13 @@ export function CreateAppDialog({ children }: CreateAppDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Create New Application</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit Application" : "Create New Application"}
+          </DialogTitle>
           <DialogDescription>
-            Configure your application settings and deployment options.
+            {isEditing
+              ? "Update your application settings and deployment options."
+              : "Configure your application settings and deployment options."}
           </DialogDescription>
         </DialogHeader>
 
@@ -235,15 +274,18 @@ export function CreateAppDialog({ children }: CreateAppDialogProps) {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={createApp.isPending}
+              disabled={createApp.isPending || updateApp.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createApp.isPending}>
-              {createApp.isPending && (
+            <Button
+              type="submit"
+              disabled={createApp.isPending || updateApp.isPending}
+            >
+              {(createApp.isPending || updateApp.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Application
+              {isEditing ? "Update Application" : "Create Application"}
             </Button>
           </DialogFooter>
         </form>
