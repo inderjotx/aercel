@@ -15,6 +15,20 @@
       "when": 1756701710120,
       "tag": "0001_goofy_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756704188847,
+      "tag": "0002_whole_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756704690097,
+      "tag": "0003_wise_giant_man",
+      "breakpoints": true
     }
   ]
 }

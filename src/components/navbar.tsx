@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -46,7 +47,9 @@ export default function Navbar() {
     <nav className="bg-background/95 supports-[backdrop-filter]:bg-background/60 border-b backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold">Aercel</h1>
+          <Link href="/">
+            <h1 className="text-xl font-bold">Aercel</h1>
+          </Link>
         </div>
         <div className="flex items-center space-x-4">
           {session ? (

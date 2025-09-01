@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp, boolean, pgEnum, jsonb } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -59,3 +60,80 @@ export const verification = pgTable("verification", {
     () => /* @__PURE__ */ new Date(),
   ),
 });
+
+export const appType = pgEnum("app_type", ["discord-bot", "server", "nextjs-app"]);
+
+export const deploymentStatus = pgEnum("deployment_status", ["pending", "building", "running", "stopped"]);
+
+
+export const app = pgTable("app", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: appType("type").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+
+  gitUrl: text("git_url").notNull(),
+  gitBranch: text("git_branch").default("main"),
+  gitToken: text("git_token"),
+  gitFolder: text("git_folder").default("."),
+  environmentVariables: jsonb("environment_variables").default({}),
+  startCommand: text("start_command"),
+  installCommand: text("install_command"),
+  buildCommand: text("build_command"),
+});
+
+
+export const deployment = pgTable("deployment", {
+  id: text("id").primaryKey(),
+  appId: text("app_id")
+    .notNull()
+    .references(() => app.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  status: deploymentStatus("status").default("pending"),
+  containerId: text("container_id"),
+  url: text("url"),
+  imageTag: text("image_tag"),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+
+});
+
+
+export const log = pgTable("log", {
+  id: text("id").primaryKey(),
+  deploymentId: text("deployment_id")
+    .notNull()
+    .references(() => deployment.id, { onDelete: "cascade" }),
+  timestamp: timestamp("timestamp").$defaultFn(() => new Date()).notNull(),
+  message: jsonb("message").notNull().default({}),
+});
+
+
+
+export const appRelations = relations(app, ({ many, one }) => ({
+  deployments: many(deployment),
+  user: one(user, { fields: [app.userId], references: [user.id] }),
+}));
+
+export const deploymentRelations = relations(deployment, ({ many, one }) => ({
+  logs: many(log),
+  app: one(app, { fields: [deployment.appId], references: [app.id] }),
+}));
+
+export const logRelations = relations(log, ({ one }) => ({
+  deployment: one(deployment, { fields: [log.deploymentId], references: [deployment.id] }),
+}));
+
+export const userRelations = relations(user, ({ many }) => ({
+  apps: many(app),
+}));
