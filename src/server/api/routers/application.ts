@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { queueService } from "@/services/queue";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { appConfig } from "@/lib/default";
 import { app, appType, deployment } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -154,11 +156,26 @@ export const applicationRouter = createTRPCRouter({
             const newDeployment = await ctx.db.insert(deployment).values({
                 appId: input.appId,
                 status: "pending",
-                // Placeholder values - in real implementation these would come from deployment process
                 containerId: null,
                 url: null,
                 imageTag: null,
             }).returning();
+
+            if (!newDeployment?.[0]) {
+                throw new Error("Failed to create deployment");
+            }
+
+            await queueService.deployApp({
+                appId: input.appId,
+                deploymentId: newDeployment?.[0].id,
+                gitBranch: appData.gitBranch ?? config.gitBranch,
+                gitUrl: appData.gitUrl,
+                gitFolder: appData.gitFolder ?? config.gitFolder,
+                installCommand: appData.installCommand ?? config.installCommand[appData.type],
+                buildCommand: appData.buildCommand ?? config.buildCommand[appData.type],
+                startCommand: appData.startCommand ?? config.startCommand[appData.type],
+                appType: appData.type,
+            });
 
             return newDeployment[0];
         }),
