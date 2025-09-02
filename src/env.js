@@ -15,6 +15,7 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: z.string(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.string(),
+    REDIS_URL: z.string(),
   },
 
   /**
@@ -33,6 +34,7 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    REDIS_URL: process.env.REDIS_URL,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,

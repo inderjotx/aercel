@@ -99,101 +99,97 @@ export function DashboardContent() {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {apps.map((app) => (
-        <Card key={app.id} className="transition-shadow hover:shadow-md">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-lg">{app.name}</CardTitle>
-                <CardDescription>
-                  {app.description ?? "No description"}
-                </CardDescription>
+        <Link href={`/dashboard/app/${app.id}`} key={app.id}>
+          <Card key={app.id} className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">{app.name}</CardTitle>
+                  <CardDescription>
+                    {app.description ?? "No description"}
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary" className="capitalize">
+                  {app.type}
+                </Badge>
               </div>
-              <Badge variant="secondary" className="capitalize">
-                {app.type}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-muted-foreground flex items-center text-sm">
-                <GitBranch className="mr-2 h-4 w-4" />
-                <span>{app.gitBranch}</span>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="text-muted-foreground flex items-center text-sm">
+                  <GitBranch className="mr-2 h-4 w-4" />
+                  <span>{app.gitBranch}</span>
+                </div>
+                <div className="text-muted-foreground flex items-center text-sm">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>
+                    Created {new Date(app.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
-              <div className="text-muted-foreground flex items-center text-sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>
-                  Created {new Date(app.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/apps/${app.id}`}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Details
-                </Link>
-              </Button>
-
-              <CreateAppDialog
-                app={{
-                  id: app.id,
-                  name: app.name,
-                  gitUrl: app.gitUrl,
-                  type: app.type,
-                  gitBranch: app.gitBranch ?? "main",
-                  gitToken: app.gitToken ?? undefined,
-                  gitFolder: app.gitFolder ?? undefined,
-                  environmentVariables:
-                    (app.environmentVariables as Record<string, string>) ?? {},
-                  startCommand: app.startCommand ?? "",
-                  installCommand: app.installCommand ?? undefined,
-                  buildCommand: app.buildCommand ?? undefined,
-                }}
-              >
-                <Button variant="outline" size="sm">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-              </CreateAppDialog>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+              <div className="flex gap-2">
+                <CreateAppDialog
+                  app={{
+                    id: app.id,
+                    name: app.name,
+                    gitUrl: app.gitUrl,
+                    type: app.type,
+                    gitBranch: app.gitBranch ?? "main",
+                    gitToken: app.gitToken ?? undefined,
+                    gitFolder: app.gitFolder ?? undefined,
+                    environmentVariables:
+                      (app.environmentVariables as Record<string, string>) ??
+                      {},
+                    startCommand: app.startCommand ?? "",
+                    installCommand: app.installCommand ?? undefined,
+                    buildCommand: app.buildCommand ?? undefined,
+                  }}
+                >
+                  <Button variant="outline" size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Are you absolutely sure?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete
-                      the application &quot;{app.name}&quot; and all its
-                      associated data.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleDeleteApp(app.id)}
-                      className="bg-red-600 hover:bg-red-700"
-                      disabled={deletingAppId === app.id}
+                </CreateAppDialog>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
                     >
-                      {deletingAppId === app.id ? "Deleting..." : "Delete"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </CardContent>
-        </Card>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the application &quot;{app.name}&quot; and all
+                        its associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteApp(app.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={deletingAppId === app.id}
+                      >
+                        {deletingAppId === app.id ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   );

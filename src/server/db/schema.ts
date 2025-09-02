@@ -105,7 +105,6 @@ export const deployment = pgTable("deployment", {
   url: text("url"),
   imageTag: text("image_tag"),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
-
 });
 
 

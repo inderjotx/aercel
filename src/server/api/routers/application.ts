@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { app, appType } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { app, appType, deployment } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 
 
 const createAppSchema = z.object({
@@ -37,6 +37,20 @@ const deleteAppSchema = z.object({
 });
 
 export const myAppsSchema = z.object({
+    page: z.number().min(1).default(1),
+    limit: z.number().min(1).default(10),
+});
+
+const getAppSchema = z.object({
+    id: z.string(),
+});
+
+const createDeploymentSchema = z.object({
+    appId: z.string(),
+});
+
+const getDeploymentsSchema = z.object({
+    appId: z.string(),
     page: z.number().min(1).default(1),
     limit: z.number().min(1).default(10),
 });
@@ -102,6 +116,81 @@ export const applicationRouter = createTRPCRouter({
             await ctx.db
                 .delete(app)
                 .where(eq(app.id, input.id));
+        }),
+
+    getApp: protectedProcedure
+        .input(getAppSchema)
+        .query(async ({ ctx, input }) => {
+            const appData = await ctx.db.query.app.findFirst({
+                where: and(eq(app.id, input.id), eq(app.userId, ctx.user.id)),
+                with: {
+                    deployments: {
+                        orderBy: (deployments, { desc }) => [desc(deployments.createdAt)],
+                        limit: 10,
+                    },
+                },
+            });
+
+            if (!appData) {
+                throw new Error("Application not found");
+            }
+
+            return appData;
+        }),
+
+    createDeployment: protectedProcedure
+        .input(createDeploymentSchema)
+        .mutation(async ({ ctx, input }) => {
+            // Verify the app belongs to the user
+            const appData = await ctx.db.query.app.findFirst({
+                where: and(eq(app.id, input.appId), eq(app.userId, ctx.user.id)),
+            });
+
+            if (!appData) {
+                throw new Error("Application not found");
+            }
+
+            // Create a placeholder deployment
+            const newDeployment = await ctx.db.insert(deployment).values({
+                appId: input.appId,
+                status: "pending",
+                // Placeholder values - in real implementation these would come from deployment process
+                containerId: null,
+                url: null,
+                imageTag: null,
+            }).returning();
+
+            return newDeployment[0];
+        }),
+
+    getDeployments: protectedProcedure
+        .input(getDeploymentsSchema)
+        .query(async ({ ctx, input }) => {
+            const { page, limit } = input;
+
+            // Verify the app belongs to the user
+            const appData = await ctx.db.query.app.findFirst({
+                where: and(eq(app.id, input.appId), eq(app.userId, ctx.user.id)),
+            });
+
+            if (!appData) {
+                throw new Error("Application not found");
+            }
+
+            const deployments = await ctx.db.query.deployment.findMany({
+                where: eq(deployment.appId, input.appId),
+                orderBy: (deployments, { desc }) => [desc(deployments.createdAt)],
+                offset: (page - 1) * limit,
+                limit: limit,
+                with: {
+                    logs: {
+                        orderBy: (logs, { desc }) => [desc(logs.timestamp)],
+                        limit: 5,
+                    },
+                },
+            });
+
+            return deployments;
         }),
 
 });

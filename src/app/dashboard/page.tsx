@@ -3,29 +3,34 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { DashboardContent } from "./_components/dashboard-content";
 import { CreateAppDialog } from "./_components/create-app-dialog";
+import { api, HydrateClient } from "@/trpc/server";
 
 export default function DashboardPage() {
-  return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your applications and deployments
-          </p>
-        </div>
-        <CreateAppDialog>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Application
-          </Button>
-        </CreateAppDialog>
-      </div>
+  void api.app.myApps.prefetch({ page: 1, limit: 50 });
 
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent />
-      </Suspense>
-    </div>
+  return (
+    <HydrateClient>
+      <div className="container mx-auto py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your applications and deployments
+            </p>
+          </div>
+          <CreateAppDialog>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Application
+            </Button>
+          </CreateAppDialog>
+        </div>
+
+        <Suspense fallback={<DashboardSkeleton />}>
+          <DashboardContent />
+        </Suspense>
+      </div>
+    </HydrateClient>
   );
 }
 
